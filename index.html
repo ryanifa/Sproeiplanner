@@ -31,21 +31,19 @@
 
     <!-- Setup-scherm voor eerste gebruik -->
     <div id="setup" class="container my-4" style="display:none; max-width:560px;">
-        <h2>Eerste installatie</h2>
-        <p class="text-muted small">
-            Vul een GitHub Personal Access Token (scope <code>gist</code>) en het Gist ID in.
-            Deze worden alleen op dit apparaat bewaard.
+        <h2>Welkom!</h2>
+        <p>
+            Om het sproeirooster te gebruiken heb je een persoonlijke GitHub-token nodig.
+            Deze wordt alleen op dit apparaat bewaard en is voor jou persoonlijk.
         </p>
+        <ol class="small text-muted">
+            <li>Log in op GitHub (of maak een gratis account aan).</li>
+            <li>Ga naar <a href="https://github.com/settings/tokens/new?scopes=gist&description=Sproeirooster" target="_blank" rel="noopener">deze pagina</a> om een token aan te maken (de scope <code>gist</code> staat al goed).</li>
+            <li>Kopieer het token (begint met <code>ghp_...</code>) en plak het hieronder.</li>
+        </ol>
         <div class="form-group">
             <label for="setup-token">GitHub Token</label>
             <input id="setup-token" type="password" class="form-control" placeholder="ghp_..." />
-        </div>
-        <div class="form-group">
-            <label for="setup-gist">Gist ID</label>
-            <input id="setup-gist" type="text" class="form-control" placeholder="bv. 1a2b3c4d5e6f..." />
-            <small class="form-text text-muted">
-                Maak een gist met bestand <code>sproeiplanner.json</code> en inhoud <code>{}</code>.
-            </small>
         </div>
         <button id="setup-save" class="btn btn-success">Opslaan</button>
         <div id="setup-error" class="text-danger mt-2"></div>
@@ -137,12 +135,12 @@
         let currentState = null;
 
         const STORAGE_TOKEN = 'sproei_gh_token';
-        const STORAGE_GIST = 'sproei_gist_id';
+        const GIST_ID = '2eb42c883d45ff90177851597467480c';
         const GIST_FILENAME = 'sproeiplanner.json';
 
         // ======== Gist storage ========
         function getToken() { return localStorage.getItem(STORAGE_TOKEN); }
-        function getGistId() { return localStorage.getItem(STORAGE_GIST); }
+        function getGistId() { return GIST_ID; }
 
         async function loadState() {
             const res = await fetch('https://api.github.com/gists/' + getGistId() + '?t=' + Date.now(), {
@@ -355,13 +353,11 @@
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('setup-save').addEventListener('click', () => {
                 const t = document.getElementById('setup-token').value.trim();
-                const g = document.getElementById('setup-gist').value.trim();
-                if (!t || !g) {
-                    document.getElementById('setup-error').textContent = 'Vul beide velden in.';
+                if (!t) {
+                    document.getElementById('setup-error').textContent = 'Vul je GitHub-token in.';
                     return;
                 }
                 localStorage.setItem(STORAGE_TOKEN, t);
-                localStorage.setItem(STORAGE_GIST, g);
                 location.reload();
             });
         }
@@ -466,16 +462,15 @@
             bindBeheer();
             refreshUI();
             document.getElementById('reset-setup').addEventListener('click', () => {
-                if (confirm('Token en Gist ID wissen?')) {
+                if (confirm('Token wissen?')) {
                     localStorage.removeItem(STORAGE_TOKEN);
-                    localStorage.removeItem(STORAGE_GIST);
                     location.reload();
                 }
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (getToken() && getGistId()) {
+            if (getToken()) {
                 startApp();
             } else {
                 showSetup();
