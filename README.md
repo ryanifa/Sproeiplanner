@@ -1,32 +1,33 @@
 # Sproei Rooster
 
-Self-contained webapp om met de buren een sproeischema bij te houden. State (geschiedenis + volgende zone) wordt gesynchroniseerd via een GitHub Gist, zodat alle gebruikers dezelfde data zien.
+Self-contained herbouw van de oorspronkelijke Azure Sproeiplanner, nu draaiend op statische GitHub Pages met state in een GitHub Gist (geen backend, geen database).
 
 ## Hoe het werkt
 
-- Per dag wordt 1 zone besproeid (1 → 2 → 3 → 4 → 1 ...).
-- De buur selecteert zijn/haar naam en drukt op **Sproei** zodra de sproeier aan staat.
-- Daarna wordt de knop voor die dag verborgen en zien anderen "De sproeier is vandaag al aangezet."
-- De volgende dag rouleert de zone +1 automatisch.
-- Onderaan staat het overzicht van wie wanneer welke zone heeft besproeid.
+- Per dag wordt 1 zone besproeid (rouleert 1 → 2 → 3 → 4 → 1).
+- De buur kiest zijn naam/huisnummer en drukt op **Sproei** zodra de sproeier aan staat.
+- Daarna wordt het formulier voor die dag verborgen en zien anderen "Er is vandaag al gesproeid door X in zone Y."
+- Alleen de instructie-rij van de **huidige** zone wordt getoond (kraanstand + foto).
+- Onderaan staat het volledige overzicht (`SproeiDatum | Door Wie | Zone`).
+- Pagina ververst zichzelf na 5 minuten inactiviteit.
 
 ## Eenmalige setup
 
 ### 1. Gist aanmaken
 
 1. Ga naar https://gist.github.com
-2. Maak een nieuwe **secret gist** met bestandsnaam `sproeiplanner.json` en inhoud `{}`
-3. Kopieer het **Gist ID** uit de URL (bv. `https://gist.github.com/jouwnaam/<GIST_ID>`)
+2. Nieuwe **secret gist** met bestandsnaam `sproeiplanner.json` en inhoud `{}`
+3. Kopieer het **Gist ID** uit de URL (`https://gist.github.com/<user>/<GIST_ID>`)
 
 ### 2. Personal Access Token
 
-1. Ga naar https://github.com/settings/tokens
-2. Maak een **Fine-grained** of **Classic** token aan met scope `gist`
-3. Bewaar de token (begint met `ghp_` of `github_pat_`)
+1. https://github.com/settings/tokens
+2. Maak een token met scope `gist` (classic) of fine-grained met gist read/write
+3. Bewaar de token
 
-### 3. Namen instellen
+### 3. Namen invullen
 
-Bewerk in `index.html` de constante `NAMES`:
+Pas in `index.html` de constante `NAMES` aan:
 
 ```js
 const NAMES = [
@@ -39,35 +40,39 @@ const NAMES = [
 
 ### 4. Foto's plaatsen
 
-Zet de volgende bestanden in `images/`:
+Zet de volgende JPGs in `images/`:
 
-- `kraan.jpg` — foto van de kraan met de timer
-- `zone1.jpg` — kraanstand voor zone 1
-- `zone2.jpg` — kraanstand voor zone 2
-- `zone3.jpg` — kraanstand voor zone 3
-- `zone4.jpg` — kraanstand voor zone 4
+- `kraan.jpg` — kraan met timer
+- `zone1.jpg` t/m `zone4.jpg` — kraanstand per zone
 
-Ontbrekende foto's tonen automatisch een placeholder.
+De zone-rij gebruikt de foto van de **huidige** zone.
 
-### 5. Zone-stand notatie
+### 5. Deploy
 
-In `index.html` de constante `ZONE_STANDEN` aanpassen aan jouw kraanstanden (welke kraan moet open per zone).
+Push naar `main`. Zet GitHub Pages aan (Settings → Pages → Source: GitHub Actions). De workflow in `.github/workflows/pages.yml` doet de rest.
 
-### 6. Deploy
+### 6. Eerste keer gebruiken
 
-Push naar `main` en zet GitHub Pages aan:
+Open de gepubliceerde URL → vul Token + Gist ID in (eenmalig, blijft in `localStorage` van het apparaat).
 
-- Repo → **Settings** → **Pages** → Source: **Deploy from a branch** (`main` / root) of **GitHub Actions**.
+## Kraanstanden per zone
 
-Open de gepubliceerde URL, vul bij eerste gebruik je token + Gist ID in. Deze worden alleen in `localStorage` van het apparaat bewaard.
+Uit de originele app:
 
-## Beveiliging
-
-- De PAT met `gist`-scope wordt lokaal opgeslagen per apparaat. Iedere buur die de app gebruikt, moet zijn eigen token invoeren (of jouw token delen — in dat geval kunnen zij ook in andere gists van die account).
-- Voor het laagste risico: maak een aparte GitHub account aan met alleen deze ene gist en deel die token.
+| Zone | Stand        |
+|------|--------------|
+| 1    | — — — &#124; |
+| 2    | &#124; &#124; — &#124; |
+| 3    | &#124; — &#124; &#124; |
+| 4    | &#124; — — — |
 
 ## Bestanden
 
-- `index.html` — de hele app
-- `images/` — zone-foto's en kraanfoto
-- `README.md` — dit bestand
+- `index.html` — de app
+- `style.css` — styling (rode message-banner, groene tabel-header, etc.)
+- `images/` — foto's
+- `.github/workflows/pages.yml` — GitHub Pages deploy
+
+## Beveiliging
+
+De PAT met `gist`-scope wordt lokaal per apparaat bewaard. Elke buur moet hem eenmalig invoeren. Voor minimaal risico: maak een aparte GitHub-account aan met alleen deze ene gist en deel die token.

@@ -1,536 +1,370 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sproei Rooster</title>
-<style>
-  :root {
-    --green: #2faa3f;
-    --green-dark: #258a31;
-    --red: #e53935;
-    --orange: #ff5a1f;
-    --bg: #ffffff;
-    --text: #111;
-    --muted: #f4f4f4;
-    --border: #d9d9d9;
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: var(--text);
-    background: var(--bg);
-  }
-  .container {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 16px;
-    padding-bottom: 80px;
-  }
-  .menu-btn {
-    width: 44px;
-    height: 36px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 18px;
-  }
-  h1 {
-    color: var(--orange);
-    font-size: 2.4rem;
-    font-weight: 700;
-    margin: 18px 0 12px;
-  }
-  .intro {
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 20px;
-  }
-  .select-label {
-    font-size: 1.05rem;
-    margin: 16px 0 8px;
-  }
-  select.name-select {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #fff;
-    margin-bottom: 12px;
-  }
-  button.sproei-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 1.1rem;
-    background: var(--green);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  button.sproei-btn:hover { background: var(--green-dark); }
-  button.sproei-btn:disabled {
-    background: #aaa;
-    cursor: not-allowed;
-  }
-  .alert {
-    border: 2px solid var(--red);
-    color: var(--red);
-    padding: 14px;
-    margin: 18px 0;
-    font-weight: 700;
-    font-size: 1.15rem;
-    text-align: center;
-  }
-  h2 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin: 22px 0 14px;
-  }
-  .instr-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border: 1px solid var(--border);
-    border-bottom: none;
-  }
-  .instr-row:last-of-type { border-bottom: 1px solid var(--border); }
-  .instr-row .img-cell {
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-right: 1px solid var(--border);
-  }
-  .instr-row .img-cell img {
-    max-width: 100%;
-    max-height: 180px;
-    object-fit: contain;
-  }
-  .instr-row .img-placeholder {
-    width: 100%;
-    height: 160px;
-    background: var(--muted);
-    border: 1px dashed var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    font-size: 0.9rem;
-    text-align: center;
-    padding: 8px;
-  }
-  .instr-row .text-cell {
-    padding: 14px;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-  .timer-warning {
-    color: var(--red);
-    font-weight: 700;
-    text-decoration: underline;
-  }
-  .zone-stand {
-    font-family: monospace;
-    font-size: 1.6rem;
-    letter-spacing: 4px;
-    margin-top: 8px;
-  }
-  table.history {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 24px;
-  }
-  table.history thead th {
-    background: var(--green);
-    color: #fff;
-    padding: 14px 10px;
-    text-align: left;
-    font-size: 1rem;
-  }
-  table.history tbody td {
-    padding: 14px 10px;
-    font-size: 1rem;
-    border-bottom: 1px solid #eee;
-  }
-  table.history tbody tr:nth-child(even) td { background: #f8f8f8; }
-  table.history th:nth-child(3),
-  table.history td:nth-child(3) { text-align: center; }
-  footer {
-    text-align: center;
-    color: #555;
-    padding: 18px 0;
-    font-size: 0.95rem;
-    border-top: 1px solid #eee;
-    margin-top: 24px;
-  }
-  .setup {
-    max-width: 520px;
-    margin: 40px auto;
-    padding: 24px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #fafafa;
-  }
-  .setup h2 { margin-top: 0; }
-  .setup label {
-    display: block;
-    margin: 12px 0 6px;
-    font-weight: 500;
-  }
-  .setup input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 1rem;
-  }
-  .setup button {
-    margin-top: 16px;
-    padding: 10px 16px;
-    background: var(--green);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  .setup .hint {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 6px;
-  }
-  .setup .error {
-    color: var(--red);
-    margin-top: 10px;
-    font-size: 0.9rem;
-  }
-  .settings-link {
-    display: inline-block;
-    margin-top: 8px;
-    color: #666;
-    font-size: 0.85rem;
-    text-decoration: underline;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  .hidden { display: none !important; }
-  .status-msg {
-    margin-top: 10px;
-    font-size: 0.9rem;
-    color: #666;
-    text-align: center;
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <title>Sproeirooster Minstreelstraat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Sproei Rooster</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-<!-- Setup screen -->
-<div id="setup" class="setup hidden">
-  <h2>Eerste installatie</h2>
-  <p>Voer een GitHub Personal Access Token (scope: <code>gist</code>) en het Gist ID in. Deze worden alleen op dit apparaat opgeslagen.</p>
-  <label for="token">GitHub Token</label>
-  <input id="token" type="password" placeholder="ghp_..." />
-  <label for="gistId">Gist ID</label>
-  <input id="gistId" type="text" placeholder="bv. 1a2b3c4d5e6f..." />
-  <div class="hint">Maak een Gist aan met een bestand <code>sproeiplanner.json</code> met inhoud <code>{}</code>. Het Gist ID staat in de URL.</div>
-  <button id="saveSetup">Opslaan</button>
-  <div id="setupError" class="error"></div>
-</div>
-
-<!-- Main app -->
-<div id="app" class="container hidden">
-  <button class="menu-btn" aria-label="menu">&#9776;</button>
-  <h1>Sproei Rooster</h1>
-  <p class="intro">
-    Selecteer je naam/huisnummer en druk op de sproei button als je de sproeier hebt aangezet.
-    Per dag hoeft slechts 1 zone te worden besproeid. Als je geen naam kunt selecteren en de sproei button is
-    NIET zichtbaar dan heeft iemand anders al de sproeier aangezet vandaag!
-  </p>
-
-  <div id="picker">
-    <div class="select-label">Selecteer je naam/huisnummer:</div>
-    <select id="nameSelect" class="name-select">
-      <option value="">selecteer je naam</option>
-    </select>
-    <button id="sproeiBtn" class="sproei-btn">Sproei</button>
-  </div>
-
-  <div id="alreadyDone" class="alert hidden" style="border-color:#888;color:#444;">
-    De sproeier is vandaag al aangezet. Morgen weer!
-  </div>
-
-  <div class="alert">Vandaag moet zone <span id="todayZone">?</span> worden besproeid.</div>
-
-  <h2>Sproei Instructie</h2>
-  <div class="instr-row">
-    <div class="img-cell">
-      <img id="kraanImg" alt="Kraan timer" />
-      <div id="kraanPlaceholder" class="img-placeholder hidden">images/kraan.jpg ontbreekt</div>
+    <!-- Setup-scherm voor eerste gebruik -->
+    <div id="setup" class="container my-4" style="display:none; max-width:560px;">
+        <h2>Eerste installatie</h2>
+        <p class="text-muted small">
+            Vul een GitHub Personal Access Token (scope <code>gist</code>) en het Gist ID in.
+            Deze worden alleen op dit apparaat bewaard.
+        </p>
+        <div class="form-group">
+            <label for="setup-token">GitHub Token</label>
+            <input id="setup-token" type="password" class="form-control" placeholder="ghp_..." />
+        </div>
+        <div class="form-group">
+            <label for="setup-gist">Gist ID</label>
+            <input id="setup-gist" type="text" class="form-control" placeholder="bv. 1a2b3c4d5e6f..." />
+            <small class="form-text text-muted">
+                Maak een gist met bestand <code>sproeiplanner.json</code> en inhoud <code>{}</code>.
+            </small>
+        </div>
+        <button id="setup-save" class="btn btn-success">Opslaan</button>
+        <div id="setup-error" class="text-danger mt-2"></div>
     </div>
-    <div class="text-cell">
-      Draai de timer van de kraan op 60 minuten.
-      <span class="timer-warning">LET OP: Bij warme dagen boven de 20 graden zet je de timer op 90 minuten!</span>
+
+    <div id="main-app" style="display:none;">
+        <h1 class="text-center">Sproei Rooster</h1>
+        <p class="text-center">Selecteer je naam/huisnummer en druk op de sproei button als je de sproeier hebt aangezet. Per dag hoeft slechts 1 zone te worden besproeid.Als je geen naam kunt selecteren en de sproei button is NIET zichtbaar dan heeft iemand anders al de sproeier aangezet vandaag!</p>
+
+        <div id="sproei-form" style="display:none;">
+            <form class="form-group d-flex flex-column align-items-center">
+                <label for="sproei-select" class="my-2 h5">Selecteer je naam/huisnummer:</label>
+                <select id="sproei-select" class="form-control w-50"></select>
+                <button id="sproei-button" class="btn btn-success my-2 w-50">Sproei</button>
+            </form>
+        </div>
+
+        <div id="message" class="message"></div>
+        <br />
+        <h2 class="text-center">Sproei Instructie</h2>
+        <table class="table table-bordered mx-auto" id="info">
+            <tbody>
+                <tr>
+                    <td><img src="images/kraan.jpg" alt="Kraan" /></td>
+                    <td>Draai de timer van de kraan op 60 minuten. <span class="warning">LET OP:  Bij warme dagen boven de 20 graden zet je de timer op 90 minuten!</span> </td>
+                </tr>
+                <tr id="row1">
+                    <td><img src="images/zone1.jpg" alt="Zone 1" /></td>
+                    <td>Om <span class="tekens">zone 1</span> te besproeien zet je de zwarte streep op de kraantjes in de volgende stand: <br /><span class="tekens">&mdash; &mdash; &mdash; |</span></td>
+                </tr>
+                <tr id="row2">
+                    <td><img src="images/zone2.jpg" alt="Zone 2" /></td>
+                    <td>Om <span class="tekens">zone 2</span> te besproeien zet je de zwarte streep op de kraantjes in de volgende stand: <br /><span class="tekens">| | &mdash; |</span></td>
+                </tr>
+                <tr id="row3">
+                    <td><img src="images/zone3.jpg" alt="Zone 3" /></td>
+                    <td>Om <span class="tekens">zone 3 </span>te besproeien zet je de zwarte streep op de kraantjes in de volgende stand: <br /><span class="tekens">| &mdash; | |</span></td>
+                </tr>
+                <tr id="row4">
+                    <td><img src="images/zone4.jpg" alt="Zone 4" /></td>
+                    <td>Om <span class="tekens">zone 4</span> te besproeien zet je de zwarte streep op de kraantjes in de volgende stand: <br /><span class="tekens">| &mdash; &mdash; &mdash;</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div id="loading" style="display: none;">Loading...</div>
+
+        <div class="footer">
+            &copy; 2023 Ryan Douglas
+        </div>
+
+        <div class="text-center my-3">
+            <button id="reset-setup" class="btn btn-link btn-sm text-muted">Instellingen wissen</button>
+        </div>
     </div>
-  </div>
-  <div class="instr-row">
-    <div class="img-cell">
-      <img id="zoneImg" alt="Zone selector" />
-      <div id="zonePlaceholder" class="img-placeholder hidden">images/zone&lt;n&gt;.jpg ontbreekt</div>
-    </div>
-    <div class="text-cell">
-      Om <strong>zone <span id="todayZone2">?</span></strong> te besproeien zet je de zwarte streep op de kraantjes in de volgende stand:
-      <div class="zone-stand" id="zoneStand"></div>
-    </div>
-  </div>
 
-  <table class="history">
-    <thead>
-      <tr>
-        <th>SproeiDatum</th>
-        <th>Door Wie</th>
-        <th>Zone</th>
-      </tr>
-    </thead>
-    <tbody id="historyBody"></tbody>
-  </table>
+    <script>
+        // ======== Config ========
+        // Pas deze lijst aan met de echte namen / huisnummers.
+        const NAMES = [
+            'Buur 1',
+            'Buur 2',
+            'Buur 3',
+            'Buur 4'
+        ];
 
-  <div class="status-msg" id="statusMsg"></div>
-  <button class="settings-link" id="resetSetup">Instellingen wissen</button>
+        const STORAGE_TOKEN = 'sproei_gh_token';
+        const STORAGE_GIST = 'sproei_gist_id';
+        const GIST_FILENAME = 'sproeiplanner.json';
 
-  <footer>&copy; 2023 Ryan Douglas</footer>
-</div>
+        // ======== Gist storage ========
+        function getToken() { return localStorage.getItem(STORAGE_TOKEN); }
+        function getGistId() { return localStorage.getItem(STORAGE_GIST); }
 
-<script>
-(function () {
-  const STORAGE_TOKEN = 'sproei_gh_token';
-  const STORAGE_GIST = 'sproei_gist_id';
-  const GIST_FILENAME = 'sproeiplanner.json';
+        async function loadState() {
+            const res = await fetch('https://api.github.com/gists/' + getGistId() + '?t=' + Date.now(), {
+                headers: { Authorization: 'token ' + getToken() },
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('Gist laden mislukt (' + res.status + ')');
+            const data = await res.json();
+            const file = data.files[GIST_FILENAME];
+            let parsed = { history: [], nextZone: 1 };
+            if (file && file.content) {
+                try {
+                    const p = JSON.parse(file.content);
+                    parsed.history = Array.isArray(p.history) ? p.history : [];
+                    parsed.nextZone = p.nextZone || 1;
+                } catch (e) { /* keep defaults */ }
+            }
+            return parsed;
+        }
 
-  // Edit deze lijst met de echte namen/huisnummers
-  const NAMES = [
-    'Buur 1',
-    'Buur 2',
-    'Buur 3',
-    'Buur 4'
-  ];
+        async function saveState(state) {
+            const body = { files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } } };
+            const res = await fetch('https://api.github.com/gists/' + getGistId(), {
+                method: 'PATCH',
+                headers: {
+                    Authorization: 'token ' + getToken(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error('Gist opslaan mislukt (' + res.status + ')');
+        }
 
-  // Zone stand notatie (welke kraan open per zone)
-  const ZONE_STANDEN = {
-    1: '| — — —',
-    2: '— | — —',
-    3: '— — | —',
-    4: '— — — |'
-  };
+        // ======== Date helpers ========
+        function todayIso() {
+            const d = new Date();
+            return d.getFullYear() + '-' +
+                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getDate()).padStart(2, '0');
+        }
+        function isoToDmy(iso) {
+            const parts = String(iso).split('-');
+            if (parts.length !== 3) return iso;
+            return parts[2] + '-' + parts[1] + '-' + parts[0];
+        }
 
-  const $ = id => document.getElementById(id);
+        // ======== UI rendering ========
+        function loadNames() {
+            const dropdown = document.getElementById('sproei-select');
+            dropdown.innerHTML = '';
+            const initial = document.createElement('option');
+            initial.textContent = 'selecteer je naam';
+            initial.value = '';
+            initial.selected = true;
+            initial.disabled = true;
+            dropdown.appendChild(initial);
+            NAMES.forEach(name => {
+                const opt = document.createElement('option');
+                opt.textContent = name;
+                dropdown.appendChild(opt);
+            });
+            document.getElementById('loading').style.display = 'none';
+        }
 
-  function todayStr() {
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    return dd + '-' + mm + '-' + d.getFullYear();
-  }
+        function showRow(zone) {
+            for (let i = 1; i <= 4; i++) {
+                const row = document.getElementById('row' + i);
+                if (row) row.style.display = 'none';
+            }
+            const active = document.getElementById('row' + zone);
+            if (active) active.style.display = '';
+        }
 
-  function token() { return localStorage.getItem(STORAGE_TOKEN); }
-  function gistId() { return localStorage.getItem(STORAGE_GIST); }
+        function createWateringTable(data) {
+            const oldTable = document.querySelector('#Watering');
+            if (oldTable) oldTable.remove();
 
-  async function loadGist() {
-    const res = await fetch('https://api.github.com/gists/' + gistId(), {
-      headers: { Authorization: 'token ' + token() }
-    });
-    if (!res.ok) throw new Error('Gist laden mislukt (' + res.status + ')');
-    const data = await res.json();
-    const file = data.files[GIST_FILENAME];
-    if (!file) return { history: [], nextZone: 1 };
-    try {
-      const parsed = JSON.parse(file.content || '{}');
-      return {
-        history: Array.isArray(parsed.history) ? parsed.history : [],
-        nextZone: parsed.nextZone || 1
-      };
-    } catch (e) {
-      return { history: [], nextZone: 1 };
-    }
-  }
+            const table = document.createElement('table');
+            table.id = 'Watering';
+            table.className = 'table mx-auto';
 
-  async function saveGist(state) {
-    const body = {
-      files: {
-        [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) }
-      }
-    };
-    const res = await fetch('https://api.github.com/gists/' + gistId(), {
-      method: 'PATCH',
-      headers: {
-        Authorization: 'token ' + token(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error('Gist opslaan mislukt (' + res.status + ')');
-  }
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            const headerRow = document.createElement('tr');
+            ['SproeiDatum', 'Door Wie', 'Zone'].forEach(h => {
+                const th = document.createElement('th');
+                th.className = 'text-center';
+                th.textContent = h;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
 
-  let state = { history: [], nextZone: 1 };
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const values = [isoToDmy(item.SproeiDatum), item.DoorWie, item.Zone];
+                values.forEach(v => {
+                    const td = document.createElement('td');
+                    td.className = 'text-center';
+                    td.textContent = v;
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
 
-  function populateNames() {
-    const sel = $('nameSelect');
-    NAMES.forEach(n => {
-      const opt = document.createElement('option');
-      opt.value = n;
-      opt.textContent = n;
-      sel.appendChild(opt);
-    });
-  }
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            document.body.appendChild(table);
+        }
 
-  function renderZoneInfo() {
-    const z = state.nextZone || 1;
-    $('todayZone').textContent = z;
-    $('todayZone2').textContent = z;
-    $('zoneStand').textContent = ZONE_STANDEN[z] || '';
+        function getLatestInfo(state) {
+            const today = todayIso();
+            const wateredToday = state.history.find(e => e.SproeiDatum === today);
+            if (wateredToday) {
+                return {
+                    wasWateredToday: true,
+                    lastWateredBy: wateredToday.DoorWie,
+                    lastZone: Number(wateredToday.Zone),
+                    nextZone: state.nextZone || 1
+                };
+            }
+            return {
+                wasWateredToday: false,
+                nextZone: state.nextZone || 1
+            };
+        }
 
-    const kraan = $('kraanImg');
-    kraan.onerror = () => {
-      kraan.classList.add('hidden');
-      $('kraanPlaceholder').classList.remove('hidden');
-    };
-    kraan.onload = () => {
-      kraan.classList.remove('hidden');
-      $('kraanPlaceholder').classList.add('hidden');
-    };
-    kraan.src = 'images/kraan.jpg';
+        async function refreshUI() {
+            try {
+                const state = await loadState();
+                const info = getLatestInfo(state);
 
-    const zoneImg = $('zoneImg');
-    const ph = $('zonePlaceholder');
-    zoneImg.onerror = () => {
-      zoneImg.classList.add('hidden');
-      ph.textContent = 'images/zone' + z + '.jpg ontbreekt';
-      ph.classList.remove('hidden');
-    };
-    zoneImg.onload = () => {
-      zoneImg.classList.remove('hidden');
-      ph.classList.add('hidden');
-    };
-    zoneImg.src = 'images/zone' + z + '.jpg';
-  }
+                if (info.wasWateredToday) {
+                    document.getElementById('message').textContent =
+                        `Er is vandaag al gesproeid door ${info.lastWateredBy} in zone ${info.lastZone}.`;
+                    document.getElementById('sproei-form').style.display = 'none';
+                    showRow(info.lastZone);
+                } else {
+                    document.getElementById('message').textContent =
+                        `Vandaag moet zone ${info.nextZone} worden besproeid.`;
+                    document.getElementById('sproei-form').style.display = 'block';
+                    showRow(info.nextZone);
+                }
 
-  function renderHistory() {
-    const body = $('historyBody');
-    body.innerHTML = '';
-    state.history.slice().reverse().forEach(entry => {
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + escapeHtml(entry.date) + '</td>' +
-        '<td>' + escapeHtml(entry.name) + '</td>' +
-        '<td>' + escapeHtml(String(entry.zone)) + '</td>';
-      body.appendChild(tr);
-    });
-  }
+                // sorteren nieuwste eerst
+                const sorted = state.history.slice().sort((a, b) =>
+                    (b.SproeiDatum + b.ts).localeCompare(a.SproeiDatum + a.ts));
+                createWateringTable(sorted);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('message').textContent =
+                    'Er ging iets mis bij het ophalen van de gegevens. Probeer de pagina opnieuw te laden.';
+            }
+        }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-  }
+        // ======== Sproei knop ========
+        function bindSproei() {
+            document.getElementById('sproei-button').addEventListener('click', async function (event) {
+                event.preventDefault();
+                const selectedOption = document.querySelector('#sproei-select option:checked');
+                if (!selectedOption || selectedOption.value === '') {
+                    document.getElementById('message').textContent = 'Selecteer eerst je naam.';
+                    return;
+                }
+                this.disabled = true;
+                try {
+                    const state = await loadState();
+                    const today = todayIso();
+                    if (state.history.some(e => e.SproeiDatum === today)) {
+                        document.getElementById('message').textContent = 'Er is vandaag al gesproeid.';
+                        await refreshUI();
+                        return;
+                    }
+                    const zone = state.nextZone || 1;
+                    state.history.push({
+                        SproeiDatum: today,
+                        DoorWie: selectedOption.textContent,
+                        Zone: zone,
+                        ts: new Date().toISOString()
+                    });
+                    state.nextZone = zone >= 4 ? 1 : zone + 1;
+                    await saveState(state);
+                    await refreshUI();
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('message').textContent = 'Er ging iets mis. Probeer het opnieuw.';
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        }
 
-  function updatePickerVisibility() {
-    const today = todayStr();
-    const doneToday = state.history.some(e => e.date === today);
-    if (doneToday) {
-      $('picker').classList.add('hidden');
-      $('alreadyDone').classList.remove('hidden');
-    } else {
-      $('picker').classList.remove('hidden');
-      $('alreadyDone').classList.add('hidden');
-    }
-  }
+        // ======== Setup-scherm ========
+        function showSetup() {
+            document.getElementById('setup').style.display = 'block';
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('setup-save').addEventListener('click', () => {
+                const t = document.getElementById('setup-token').value.trim();
+                const g = document.getElementById('setup-gist').value.trim();
+                if (!t || !g) {
+                    document.getElementById('setup-error').textContent = 'Vul beide velden in.';
+                    return;
+                }
+                localStorage.setItem(STORAGE_TOKEN, t);
+                localStorage.setItem(STORAGE_GIST, g);
+                location.reload();
+            });
+        }
 
-  async function onSproei() {
-    const name = $('nameSelect').value;
-    if (!name) {
-      alert('Selecteer eerst je naam.');
-      return;
-    }
-    const btn = $('sproeiBtn');
-    btn.disabled = true;
-    $('statusMsg').textContent = 'Bezig met opslaan...';
-    try {
-      const fresh = await loadGist();
-      state = fresh;
-      const today = todayStr();
-      if (state.history.some(e => e.date === today)) {
-        updatePickerVisibility();
-        $('statusMsg').textContent = 'De sproeier is vandaag al aangezet.';
-        return;
-      }
-      const zone = state.nextZone || 1;
-      state.history.push({ date: today, name: name, zone: zone });
-      state.nextZone = zone >= 4 ? 1 : zone + 1;
-      await saveGist(state);
-      renderZoneInfo();
-      renderHistory();
-      updatePickerVisibility();
-      $('statusMsg').textContent = 'Opgeslagen. Bedankt!';
-    } catch (e) {
-      $('statusMsg').textContent = 'Fout: ' + e.message;
-    } finally {
-      btn.disabled = false;
-    }
-  }
+        function startApp() {
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('loading').style.display = 'block';
+            loadNames();
+            bindSproei();
+            refreshUI();
+            document.getElementById('reset-setup').addEventListener('click', () => {
+                if (confirm('Token en Gist ID wissen?')) {
+                    localStorage.removeItem(STORAGE_TOKEN);
+                    localStorage.removeItem(STORAGE_GIST);
+                    location.reload();
+                }
+            });
+        }
 
-  async function startApp() {
-    $('setup').classList.add('hidden');
-    $('app').classList.remove('hidden');
-    populateNames();
-    $('sproeiBtn').addEventListener('click', onSproei);
-    $('resetSetup').addEventListener('click', () => {
-      if (confirm('Token en Gist ID wissen?')) {
-        localStorage.removeItem(STORAGE_TOKEN);
-        localStorage.removeItem(STORAGE_GIST);
-        location.reload();
-      }
-    });
-    try {
-      state = await loadGist();
-    } catch (e) {
-      $('statusMsg').textContent = 'Gist niet bereikbaar: ' + e.message;
-    }
-    renderZoneInfo();
-    renderHistory();
-    updatePickerVisibility();
-  }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (getToken() && getGistId()) {
+                startApp();
+            } else {
+                showSetup();
+            }
+        });
 
-  function showSetup() {
-    $('setup').classList.remove('hidden');
-    $('app').classList.add('hidden');
-    $('saveSetup').addEventListener('click', () => {
-      const t = $('token').value.trim();
-      const g = $('gistId').value.trim();
-      if (!t || !g) {
-        $('setupError').textContent = 'Vul beide velden in.';
-        return;
-      }
-      localStorage.setItem(STORAGE_TOKEN, t);
-      localStorage.setItem(STORAGE_GIST, g);
-      startApp();
-    });
-  }
+        // ======== Auto refresh bij inactiviteit ========
+        const inactivityTime = 300000;
+        let timer;
+        function refreshPage() { location.reload(); }
+        function resetTimer() {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(refreshPage, inactivityTime);
+        }
+        window.addEventListener('mousemove', resetTimer);
+        window.addEventListener('mousedown', resetTimer);
+        window.addEventListener('keypress', resetTimer);
+        window.addEventListener('scroll', resetTimer);
+        resetTimer();
+    </script>
 
-  if (token() && gistId()) {
-    startApp();
-  } else {
-    showSetup();
-  }
-})();
-</script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
