@@ -123,10 +123,13 @@
 
         async function loadState() {
             const res = await fetch('https://api.github.com/gists/' + getGistId() + '?t=' + Date.now(), {
-                headers: { Authorization: 'token ' + getToken() },
+                headers: { Authorization: 'Bearer ' + getToken() },
                 cache: 'no-store'
             });
-            if (!res.ok) throw new Error('Gist laden mislukt (' + res.status + ')');
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error('Gist laden mislukt (' + res.status + ') ' + body);
+            }
             const data = await res.json();
             const file = data.files[GIST_FILENAME];
             let parsed = { history: [], nextZone: 1 };
@@ -145,12 +148,15 @@
             const res = await fetch('https://api.github.com/gists/' + getGistId(), {
                 method: 'PATCH',
                 headers: {
-                    Authorization: 'token ' + getToken(),
+                    Authorization: 'Bearer ' + getToken(),
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(body)
             });
-            if (!res.ok) throw new Error('Gist opslaan mislukt (' + res.status + ')');
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                throw new Error('Gist opslaan mislukt (' + res.status + ') ' + body);
+            }
         }
 
         // ======== Date helpers ========
@@ -270,7 +276,7 @@
             } catch (err) {
                 console.error(err);
                 document.getElementById('message').textContent =
-                    'Er ging iets mis bij het ophalen van de gegevens. Probeer de pagina opnieuw te laden.';
+                    'Er ging iets mis bij het ophalen van de gegevens: ' + (err && err.message ? err.message : err);
             }
         }
 
@@ -304,7 +310,7 @@
                     await refreshUI();
                 } catch (err) {
                     console.error(err);
-                    document.getElementById('message').textContent = 'Er ging iets mis. Probeer het opnieuw.';
+                    document.getElementById('message').textContent = 'Er ging iets mis: ' + (err && err.message ? err.message : err);
                 } finally {
                     this.disabled = false;
                 }
