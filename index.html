@@ -101,19 +101,30 @@
     </div>
 
     <div id="beheer" class="container my-4" style="display:none; max-width:640px;">
-        <h2>Beheer namen / huisnummers</h2>
-        <p class="text-muted small">Deze lijst wordt gedeeld via de gist. Wijzigingen zijn meteen zichtbaar op alle apparaten.</p>
+        <h2>Namen / huisnummers</h2>
+        <p class="text-muted small">Klik op "Bewerken" om je naam aan te passen.</p>
         <ul id="naam-lijst" class="list-group mb-3"></ul>
-        <div class="form-group">
-            <label for="nieuwe-naam">Nieuwe naam toevoegen</label>
-            <div class="input-group">
-                <input id="nieuwe-naam" type="text" class="form-control" placeholder="bv. Jansen (40)" />
-                <div class="input-group-append">
-                    <button id="naam-toevoegen" class="btn btn-success">Toevoegen</button>
+
+        <div id="advanced-block" style="display:none;">
+            <div class="form-group">
+                <label for="nieuwe-naam">Nieuwe naam toevoegen</label>
+                <div class="input-group">
+                    <input id="nieuwe-naam" type="text" class="form-control" placeholder="bv. Jansen (40)" />
+                    <div class="input-group-append">
+                        <button id="naam-toevoegen" class="btn btn-success">Toevoegen</button>
+                    </div>
                 </div>
             </div>
         </div>
+
         <div id="beheer-message" class="text-danger small"></div>
+
+        <div class="mt-5 text-right" style="opacity:0.35;">
+            <small>
+                <input type="checkbox" id="advanced-toggle" />
+                <label for="advanced-toggle" class="mb-0">geavanceerd</label>
+            </small>
+        </div>
     </div>
 
     <script>
@@ -361,6 +372,9 @@
         }
 
         // ======== Beheer ========
+        let editingIdx = null;
+        let advancedMode = false;
+
         function renderBeheerLijst() {
             const ul = document.getElementById('naam-lijst');
             if (!ul || !currentState) return;
@@ -368,16 +382,76 @@
             (currentState.names || []).forEach((name, idx) => {
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                const span = document.createElement('span');
-                span.textContent = name;
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-outline-danger';
-                btn.textContent = 'Verwijder';
-                btn.addEventListener('click', () => removeName(idx));
-                li.appendChild(span);
-                li.appendChild(btn);
+
+                if (editingIdx === idx) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control form-control-sm mr-2';
+                    input.value = name;
+                    input.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') { e.preventDefault(); saveEdit(idx, input.value); }
+                        if (e.key === 'Escape') { editingIdx = null; renderBeheerLijst(); }
+                    });
+
+                    const save = document.createElement('button');
+                    save.className = 'btn btn-sm btn-success mr-1';
+                    save.textContent = 'Opslaan';
+                    save.addEventListener('click', () => saveEdit(idx, input.value));
+
+                    const cancel = document.createElement('button');
+                    cancel.className = 'btn btn-sm btn-outline-secondary';
+                    cancel.textContent = 'Annuleren';
+                    cancel.addEventListener('click', () => { editingIdx = null; renderBeheerLijst(); });
+
+                    const actions = document.createElement('div');
+                    actions.className = 'd-flex flex-shrink-0';
+                    actions.appendChild(save);
+                    actions.appendChild(cancel);
+
+                    li.appendChild(input);
+                    li.appendChild(actions);
+                    setTimeout(() => { input.focus(); input.select(); }, 0);
+                } else {
+                    const span = document.createElement('span');
+                    span.textContent = name;
+
+                    const actions = document.createElement('div');
+                    actions.className = 'd-flex flex-shrink-0';
+
+                    const edit = document.createElement('button');
+                    edit.className = 'btn btn-sm btn-outline-primary mr-1';
+                    edit.textContent = 'Bewerken';
+                    edit.addEventListener('click', () => { editingIdx = idx; renderBeheerLijst(); });
+                    actions.appendChild(edit);
+
+                    if (advancedMode) {
+                        const del = document.createElement('button');
+                        del.className = 'btn btn-sm btn-outline-danger';
+                        del.textContent = 'Verwijder';
+                        del.addEventListener('click', () => removeName(idx));
+                        actions.appendChild(del);
+                    }
+
+                    li.appendChild(span);
+                    li.appendChild(actions);
+                }
                 ul.appendChild(li);
             });
+        }
+
+        async function saveEdit(idx, newValue) {
+            const trimmed = (newValue || '').trim();
+            const msg = document.getElementById('beheer-message');
+            msg.textContent = '';
+            if (!trimmed) { msg.textContent = 'Naam mag niet leeg zijn.'; return; }
+            const list = currentState.names.slice();
+            if (list.some((n, i) => i !== idx && n === trimmed)) {
+                msg.textContent = 'Naam bestaat al.';
+                return;
+            }
+            list[idx] = trimmed;
+            editingIdx = null;
+            await persistNames(list);
         }
 
         async function persistNames(newNames) {
@@ -437,6 +511,7 @@
             });
             document.getElementById('nav-beheer').addEventListener('click', e => {
                 e.preventDefault();
+                editingIdx = null;
                 renderBeheerLijst();
                 showView('beheer');
             });
@@ -449,6 +524,11 @@
                     e.preventDefault();
                     addName();
                 }
+            });
+            document.getElementById('advanced-toggle').addEventListener('change', e => {
+                advancedMode = e.target.checked;
+                document.getElementById('advanced-block').style.display = advancedMode ? 'block' : 'none';
+                renderBeheerLijst();
             });
         }
 
