@@ -20,7 +20,10 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.html">Sproei Rooster</a>
+                    <a class="nav-link" href="#" id="nav-rooster">Sproei Rooster</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="nav-beheer">Beheer</a>
                 </li>
             </ul>
         </div>
@@ -62,6 +65,7 @@
 
         <div id="message" class="message"></div>
         <br />
+        <div id="instructie-blok">
         <h2 class="text-center">Sproei Instructie</h2>
         <table class="table table-bordered mx-auto" id="info">
             <tbody>
@@ -87,6 +91,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <div id="loading" style="display: none;">Loading...</div>
 
@@ -99,10 +104,26 @@
         </div>
     </div>
 
+    <div id="beheer" class="container my-4" style="display:none; max-width:640px;">
+        <h2>Beheer namen / huisnummers</h2>
+        <p class="text-muted small">Deze lijst wordt gedeeld via de gist. Wijzigingen zijn meteen zichtbaar op alle apparaten.</p>
+        <ul id="naam-lijst" class="list-group mb-3"></ul>
+        <div class="form-group">
+            <label for="nieuwe-naam">Nieuwe naam toevoegen</label>
+            <div class="input-group">
+                <input id="nieuwe-naam" type="text" class="form-control" placeholder="bv. Jansen (40)" />
+                <div class="input-group-append">
+                    <button id="naam-toevoegen" class="btn btn-success">Toevoegen</button>
+                </div>
+            </div>
+        </div>
+        <div id="beheer-message" class="text-danger small"></div>
+    </div>
+
     <script>
         // ======== Config ========
-        // Pas deze lijst aan met de echte namen / huisnummers.
-        const NAMES = [
+        // Default lijst — wordt alleen gebruikt als de gist nog geen namen bevat.
+        const DEFAULT_NAMES = [
             'Bolk-Bulthuis (30)',
             'Douglas (34)',
             'Feelders (32)',
@@ -112,6 +133,8 @@
             'van Beelen (26)',
             'van Berge Henegouwen (28)'
         ];
+
+        let currentState = null;
 
         const STORAGE_TOKEN = 'sproei_gh_token';
         const STORAGE_GIST = 'sproei_gist_id';
@@ -132,13 +155,17 @@
             }
             const data = await res.json();
             const file = data.files[GIST_FILENAME];
-            let parsed = { history: [], nextZone: 1 };
+            let parsed = { history: [], nextZone: 1, names: null };
             if (file && file.content) {
                 try {
                     const p = JSON.parse(file.content);
                     parsed.history = Array.isArray(p.history) ? p.history : [];
                     parsed.nextZone = p.nextZone || 1;
+                    parsed.names = Array.isArray(p.names) ? p.names : null;
                 } catch (e) { /* keep defaults */ }
+            }
+            if (!parsed.names || !parsed.names.length) {
+                parsed.names = DEFAULT_NAMES.slice();
             }
             return parsed;
         }
@@ -173,7 +200,7 @@
         }
 
         // ======== UI rendering ========
-        function loadNames() {
+        function loadNames(names) {
             const dropdown = document.getElementById('sproei-select');
             dropdown.innerHTML = '';
             const initial = document.createElement('option');
@@ -182,7 +209,7 @@
             initial.selected = true;
             initial.disabled = true;
             dropdown.appendChild(initial);
-            NAMES.forEach(name => {
+            (names || []).forEach(name => {
                 const opt = document.createElement('option');
                 opt.textContent = name;
                 dropdown.appendChild(opt);
@@ -255,17 +282,22 @@
         async function refreshUI() {
             try {
                 const state = await loadState();
+                currentState = state;
+                loadNames(state.names);
+                renderBeheerLijst();
                 const info = getLatestInfo(state);
 
+                const instructie = document.getElementById('instructie-blok');
                 if (info.wasWateredToday) {
                     document.getElementById('message').textContent =
                         `Er is vandaag al gesproeid door ${info.lastWateredBy} in zone ${info.lastZone}.`;
                     document.getElementById('sproei-form').style.display = 'none';
-                    showRow(info.lastZone);
+                    if (instructie) instructie.style.display = 'none';
                 } else {
                     document.getElementById('message').textContent =
                         `Vandaag moet zone ${info.nextZone} worden besproeid.`;
                     document.getElementById('sproei-form').style.display = 'block';
+                    if (instructie) instructie.style.display = '';
                     showRow(info.nextZone);
                 }
 
@@ -334,12 +366,104 @@
             });
         }
 
+        // ======== Beheer ========
+        function renderBeheerLijst() {
+            const ul = document.getElementById('naam-lijst');
+            if (!ul || !currentState) return;
+            ul.innerHTML = '';
+            (currentState.names || []).forEach((name, idx) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                const span = document.createElement('span');
+                span.textContent = name;
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-sm btn-outline-danger';
+                btn.textContent = 'Verwijder';
+                btn.addEventListener('click', () => removeName(idx));
+                li.appendChild(span);
+                li.appendChild(btn);
+                ul.appendChild(li);
+            });
+        }
+
+        async function persistNames(newNames) {
+            const msg = document.getElementById('beheer-message');
+            msg.textContent = '';
+            try {
+                const fresh = await loadState();
+                fresh.names = newNames;
+                await saveState(fresh);
+                currentState = fresh;
+                renderBeheerLijst();
+                loadNames(fresh.names);
+            } catch (err) {
+                console.error(err);
+                msg.textContent = 'Opslaan mislukt: ' + (err && err.message ? err.message : err);
+            }
+        }
+
+        async function addName() {
+            const input = document.getElementById('nieuwe-naam');
+            const msg = document.getElementById('beheer-message');
+            const value = input.value.trim();
+            msg.textContent = '';
+            if (!value) {
+                msg.textContent = 'Vul een naam in.';
+                return;
+            }
+            const list = (currentState && currentState.names) ? currentState.names.slice() : [];
+            if (list.includes(value)) {
+                msg.textContent = 'Naam bestaat al.';
+                return;
+            }
+            list.push(value);
+            list.sort((a, b) => a.localeCompare(b, 'nl'));
+            input.value = '';
+            await persistNames(list);
+        }
+
+        async function removeName(idx) {
+            if (!currentState || !currentState.names) return;
+            const name = currentState.names[idx];
+            if (!confirm(`Naam "${name}" verwijderen?`)) return;
+            const list = currentState.names.slice();
+            list.splice(idx, 1);
+            await persistNames(list);
+        }
+
+        function showView(view) {
+            document.getElementById('main-app').style.display = view === 'rooster' ? 'block' : 'none';
+            document.getElementById('beheer').style.display = view === 'beheer' ? 'block' : 'none';
+        }
+
+        function bindBeheer() {
+            document.getElementById('nav-rooster').addEventListener('click', e => {
+                e.preventDefault();
+                showView('rooster');
+            });
+            document.getElementById('nav-beheer').addEventListener('click', e => {
+                e.preventDefault();
+                renderBeheerLijst();
+                showView('beheer');
+            });
+            document.getElementById('naam-toevoegen').addEventListener('click', e => {
+                e.preventDefault();
+                addName();
+            });
+            document.getElementById('nieuwe-naam').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addName();
+                }
+            });
+        }
+
         function startApp() {
             document.getElementById('setup').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('loading').style.display = 'block';
-            loadNames();
             bindSproei();
+            bindBeheer();
             refreshUI();
             document.getElementById('reset-setup').addEventListener('click', () => {
                 if (confirm('Token en Gist ID wissen?')) {
