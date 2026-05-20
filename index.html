@@ -33,17 +33,15 @@
     <div id="setup" class="container my-4" style="display:none; max-width:560px;">
         <h2>Welkom!</h2>
         <p>
-            Om het sproeirooster te gebruiken heb je een persoonlijke GitHub-token nodig.
-            Deze wordt alleen op dit apparaat bewaard en is voor jou persoonlijk.
+            Om het sproeirooster te gebruiken heb je een toegangscode nodig.
+            Deze ontvang je van Ryan Douglas (huisnummer 34).
         </p>
-        <ol class="small text-muted">
-            <li>Log in op GitHub (of maak een gratis account aan).</li>
-            <li>Ga naar <a href="https://github.com/settings/tokens/new?scopes=gist&description=Sproeirooster" target="_blank" rel="noopener">deze pagina</a> om een token aan te maken (de scope <code>gist</code> staat al goed).</li>
-            <li>Kopieer het token (begint met <code>ghp_...</code>) en plak het hieronder.</li>
-        </ol>
+        <p class="text-muted small">
+            De code wordt alleen op dit apparaat bewaard. Je hoeft 'm dus maar één keer in te vullen.
+        </p>
         <div class="form-group">
-            <label for="setup-token">GitHub Token</label>
-            <input id="setup-token" type="password" class="form-control" placeholder="ghp_..." />
+            <label for="setup-token">Toegangscode</label>
+            <input id="setup-token" type="password" class="form-control" placeholder="Plak hier de code van Ryan" />
         </div>
         <button id="setup-save" class="btn btn-success">Opslaan</button>
         <div id="setup-error" class="text-danger mt-2"></div>
@@ -354,7 +352,7 @@
             document.getElementById('setup-save').addEventListener('click', () => {
                 const t = document.getElementById('setup-token').value.trim();
                 if (!t) {
-                    document.getElementById('setup-error').textContent = 'Vul je GitHub-token in.';
+                    document.getElementById('setup-error').textContent = 'Vul de toegangscode in.';
                     return;
                 }
                 localStorage.setItem(STORAGE_TOKEN, t);
@@ -462,7 +460,7 @@
             bindBeheer();
             refreshUI();
             document.getElementById('reset-setup').addEventListener('click', () => {
-                if (confirm('Token wissen?')) {
+                if (confirm('Toegangscode wissen?')) {
                     localStorage.removeItem(STORAGE_TOKEN);
                     location.reload();
                 }
