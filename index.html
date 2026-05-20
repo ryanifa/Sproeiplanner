@@ -297,7 +297,7 @@
                 const instructie = document.getElementById('instructie-blok');
                 if (info.wasWateredToday) {
                     document.getElementById('message').textContent =
-                        `Er is vandaag al gesproeid door ${info.lastWateredBy} in zone ${info.lastZone}.`;
+                        `Er is vandaag gesproeid door ${info.lastWateredBy} in zone ${info.lastZone}.`;
                     document.getElementById('sproei-form').style.display = 'none';
                     if (instructie) instructie.style.display = 'none';
                 } else {
