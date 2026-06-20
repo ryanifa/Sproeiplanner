@@ -31,8 +31,8 @@
 
     <!-- Setup-scherm voor eerste gebruik -->
     <div id="setup" class="container my-4" style="display:none; max-width:560px;">
-        <h2>Welkom!</h2>
-        <p>
+        <h2 id="setup-heading">Welkom!</h2>
+        <p id="setup-intro">
             Om het sproeirooster te gebruiken heb je een toegangscode nodig.
             Deze ontvang je van Ryan Douglas (huisnummer 34).
         </p>
@@ -151,6 +151,19 @@
         function getToken() { return localStorage.getItem(STORAGE_TOKEN); }
         function getGistId() { return GIST_ID; }
 
+        function makeApiError(action, status, body) {
+            const err = new Error(action + ' mislukt (' + status + ') ' + body);
+            err.status = status;
+            return err;
+        }
+
+        function isAuthError(err) {
+            if (!err) return false;
+            if (err.status === 401 || err.status === 403 || err.status === 404) return true;
+            const msg = (err.message || '').toLowerCase();
+            return /bad credentials|requires authentication|not found/.test(msg);
+        }
+
         async function loadState() {
             const res = await fetch('https://api.github.com/gists/' + getGistId() + '?t=' + Date.now(), {
                 headers: { Authorization: 'Bearer ' + getToken() },
@@ -158,7 +171,7 @@
             });
             if (!res.ok) {
                 const body = await res.text().catch(() => '');
-                throw new Error('Gist laden mislukt (' + res.status + ') ' + body);
+                throw makeApiError('Gist laden', res.status, body);
             }
             const data = await res.json();
             const file = data.files[GIST_FILENAME];
@@ -189,7 +202,7 @@
             });
             if (!res.ok) {
                 const body = await res.text().catch(() => '');
-                throw new Error('Gist opslaan mislukt (' + res.status + ') ' + body);
+                throw makeApiError('Gist opslaan', res.status, body);
             }
         }
 
@@ -314,6 +327,7 @@
                 createWateringTable(sorted);
             } catch (err) {
                 console.error(err);
+                if (handleAuthError(err)) return;
                 document.getElementById('message').textContent =
                     'Er ging iets mis bij het ophalen van de gegevens: ' + (err && err.message ? err.message : err);
             }
@@ -349,6 +363,7 @@
                     await refreshUI();
                 } catch (err) {
                     console.error(err);
+                    if (handleAuthError(err)) return;
                     document.getElementById('message').textContent = 'Er ging iets mis: ' + (err && err.message ? err.message : err);
                 } finally {
                     this.disabled = false;
@@ -357,9 +372,7 @@
         }
 
         // ======== Setup-scherm ========
-        function showSetup() {
-            document.getElementById('setup').style.display = 'block';
-            document.getElementById('main-app').style.display = 'none';
+        function bindSetup() {
             document.getElementById('setup-save').addEventListener('click', () => {
                 const t = document.getElementById('setup-token').value.trim();
                 if (!t) {
@@ -369,6 +382,41 @@
                 localStorage.setItem(STORAGE_TOKEN, t);
                 location.reload();
             });
+            document.getElementById('setup-token').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('setup-save').click();
+                }
+            });
+        }
+
+        function showSetup(errorMsg) {
+            document.getElementById('setup').style.display = 'block';
+            document.getElementById('main-app').style.display = 'none';
+            const beheer = document.getElementById('beheer');
+            if (beheer) beheer.style.display = 'none';
+            const watering = document.getElementById('Watering');
+            if (watering) watering.remove();
+
+            const heading = document.getElementById('setup-heading');
+            const intro = document.getElementById('setup-intro');
+            if (errorMsg) {
+                heading.textContent = 'Nieuwe toegangscode nodig';
+                intro.textContent = 'De huidige toegangscode werkt niet meer. Vraag Ryan Douglas (huisnummer 34) om de nieuwe code en plak die hieronder.';
+            } else {
+                heading.textContent = 'Welkom!';
+                intro.textContent = 'Om het sproeirooster te gebruiken heb je een toegangscode nodig. Deze ontvang je van Ryan Douglas (huisnummer 34).';
+            }
+            document.getElementById('setup-error').textContent = errorMsg || '';
+            document.getElementById('setup-token').value = '';
+            document.getElementById('setup-token').focus();
+        }
+
+        function handleAuthError(err) {
+            if (!isAuthError(err)) return false;
+            localStorage.removeItem(STORAGE_TOKEN);
+            showSetup('De toegangscode is niet (meer) geldig. Vul de nieuwe code in die je van Ryan hebt gekregen.');
+            return true;
         }
 
         // ======== Beheer ========
@@ -466,6 +514,7 @@
                 loadNames(fresh.names);
             } catch (err) {
                 console.error(err);
+                if (handleAuthError(err)) return;
                 msg.textContent = 'Opslaan mislukt: ' + (err && err.message ? err.message : err);
             }
         }
@@ -548,6 +597,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            bindSetup();
             if (getToken()) {
                 startApp();
             } else {
