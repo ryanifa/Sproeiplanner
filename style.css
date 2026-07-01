@@ -35,12 +35,14 @@ h1.text-center {
     font-size: 1.15rem;
 }
 
-#info {
+#info,
+#info-overzicht {
     max-width: 700px;
     margin-top: 16px;
 }
 
-#info img {
+#info img,
+#info-overzicht img {
     max-width: 100%;
     max-height: 180px;
     object-fit: contain;
@@ -48,8 +50,27 @@ h1.text-center {
     margin: 0 auto;
 }
 
-#info td {
+#info td,
+#info-overzicht td {
     vertical-align: middle;
+}
+
+#info-overzicht .zone-label {
+    white-space: nowrap;
+    width: 1%;
+}
+
+#info-overzicht .zone-code {
+    white-space: nowrap;
+    text-align: center;
+    width: 1%;
+}
+
+@media (max-width: 480px) {
+    #info img,
+    #info-overzicht img {
+        max-height: 120px;
+    }
 }
 
 #Watering {
