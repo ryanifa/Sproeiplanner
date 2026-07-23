@@ -8,7 +8,7 @@
     <meta http-equiv="Expires" content="0" />
 
     <title>Sproeirooster Minstreelstraat</title>
-    <link rel="stylesheet" href="style.css?v=1.7">
+    <link rel="stylesheet" href="style.css?v=1.8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
@@ -57,12 +57,12 @@
         <div id="message" class="message"></div>
 
         <div id="rotatie-section" class="sproei-card">
-            <h5 class="text-center sproei-card-title">Reguliere rotatie</h5>
+            <h5 id="rotatie-title" class="text-center sproei-card-title">Vandaag sproeien</h5>
             <div id="rotatie-message" class="text-center sproei-card-message"></div>
             <div id="rotatie-form" style="display:none;">
                 <form class="form-group d-flex flex-column align-items-center">
                     <select id="rotatie-select" class="form-control sproei-select"></select>
-                    <button id="rotatie-button" class="btn btn-success my-2 sproei-btn">Rotatie gesproeid</button>
+                    <button id="rotatie-button" class="btn btn-success my-2 sproei-btn">Ik heb gesproeid</button>
                 </form>
             </div>
         </div>
@@ -194,7 +194,7 @@
 
     <script>
         // ======== Config ========
-        const APP_VERSION = 'v1.7 (2026-07-23)';
+        const APP_VERSION = 'v1.8 (2026-07-23)';
         const DEFAULT_NAMES = [
             'Bolk-Bulthuis (30)',
             'Douglas (34)',
@@ -396,13 +396,18 @@
                 if (msg) msg.textContent = '';
 
                 // Rotatie sectie
+                const rotatieTitle = document.getElementById('rotatie-title');
                 const rotatieMsg = document.getElementById('rotatie-message');
                 const rotatieForm = document.getElementById('rotatie-form');
+                const rotatieBtn = document.getElementById('rotatie-button');
                 if (status.rotatieDone) {
-                    rotatieMsg.textContent = `Vandaag al gedaan: zone ${status.rotatieDone.Zone} door ${status.rotatieDone.DoorWie}.`;
+                    rotatieTitle.textContent = `Zone ${status.rotatieDone.Zone} vandaag gedaan door ${status.rotatieDone.DoorWie}`;
+                    rotatieMsg.textContent = '';
                     rotatieForm.style.display = 'none';
                 } else {
-                    rotatieMsg.textContent = `Vandaag aan de beurt: zone ${status.nextRotatieZone}.`;
+                    rotatieTitle.textContent = `Zone ${status.nextRotatieZone} aan de beurt`;
+                    rotatieMsg.textContent = '';
+                    rotatieBtn.textContent = `Ik heb zone ${status.nextRotatieZone} gesproeid`;
                     rotatieForm.style.display = 'block';
                 }
 
