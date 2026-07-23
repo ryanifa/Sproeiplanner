@@ -8,7 +8,7 @@
     <meta http-equiv="Expires" content="0" />
 
     <title>Sproeirooster Minstreelstraat</title>
-    <link rel="stylesheet" href="style.css?v=1.6">
+    <link rel="stylesheet" href="style.css?v=1.7">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
@@ -52,17 +52,32 @@
 
     <div id="main-app" style="display:none;">
         <h1 class="text-center">Sproei Rooster</h1>
-        <p class="text-center">Selecteer je naam/huisnummer en druk op de sproei button als je de sproeier hebt aangezet. Per dag hoeft slechts 1 zone te worden besproeid.Als je geen naam kunt selecteren en de sproei button is NIET zichtbaar dan heeft iemand anders al de sproeier aangezet vandaag!</p>
-
-        <div id="sproei-form" style="display:none;">
-            <form class="form-group d-flex flex-column align-items-center">
-                <label for="sproei-select" class="my-2 h5">Selecteer je naam/huisnummer:</label>
-                <select id="sproei-select" class="form-control w-50"></select>
-                <button id="sproei-button" class="btn btn-success my-2 w-50">Sproei</button>
-            </form>
-        </div>
+        <p class="text-center">Kies je naam en druk op de knop nadat je de sproeier hebt aangezet.</p>
 
         <div id="message" class="message"></div>
+
+        <div id="rotatie-section" class="sproei-card">
+            <h5 class="text-center sproei-card-title">Reguliere rotatie</h5>
+            <div id="rotatie-message" class="text-center sproei-card-message"></div>
+            <div id="rotatie-form" style="display:none;">
+                <form class="form-group d-flex flex-column align-items-center">
+                    <select id="rotatie-select" class="form-control sproei-select"></select>
+                    <button id="rotatie-button" class="btn btn-success my-2 sproei-btn">Rotatie gesproeid</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="plantenbakken-section" class="sproei-card" style="display:none;">
+            <h5 class="text-center sproei-card-title">Plantenbakken (zone 3)</h5>
+            <div id="plantenbakken-message" class="text-center sproei-card-message"></div>
+            <div id="plantenbakken-form" style="display:none;">
+                <form class="form-group d-flex flex-column align-items-center">
+                    <select id="plantenbakken-select" class="form-control sproei-select"></select>
+                    <button id="plantenbakken-button" class="btn btn-success my-2 sproei-btn">Plantenbakken gesproeid</button>
+                </form>
+            </div>
+        </div>
+
         <br />
         <div id="instructie-blok">
         <h2 class="text-center">Sproei Instructie</h2>
@@ -141,6 +156,22 @@
 
         <div id="advanced-block" style="display:none;">
             <div class="form-group">
+                <label class="font-weight-bold">Zomermodus (dagelijkse plantenbakken zone 3)</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="summer-mode" id="summer-auto" value="auto" />
+                    <label class="form-check-label" for="summer-auto">Automatisch (1 april t/m 31 augustus)</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="summer-mode" id="summer-on" value="on" />
+                    <label class="form-check-label" for="summer-on">Altijd aan</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="summer-mode" id="summer-off" value="off" />
+                    <label class="form-check-label" for="summer-off">Altijd uit</label>
+                </div>
+            </div>
+            <hr />
+            <div class="form-group">
                 <label for="nieuwe-naam">Nieuwe naam toevoegen</label>
                 <div class="input-group">
                     <input id="nieuwe-naam" type="text" class="form-control" placeholder="bv. Jansen (40)" />
@@ -163,7 +194,7 @@
 
     <script>
         // ======== Config ========
-        const APP_VERSION = 'v1.6 (2026-07-01)';
+        const APP_VERSION = 'v1.7 (2026-07-23)';
         const DEFAULT_NAMES = [
             'Bolk-Bulthuis (30)',
             'Douglas (34)',
@@ -209,19 +240,28 @@
             }
             const data = await res.json();
             const file = data.files[GIST_FILENAME];
-            let parsed = { history: [], nextZone: 1, names: null };
+            let parsed = { history: [], nextZone: 1, names: null, summerMode: 'auto' };
             if (file && file.content) {
                 try {
                     const p = JSON.parse(file.content);
                     parsed.history = Array.isArray(p.history) ? p.history : [];
                     parsed.nextZone = p.nextZone || 1;
                     parsed.names = Array.isArray(p.names) ? p.names : null;
+                    parsed.summerMode = ['auto', 'on', 'off'].includes(p.summerMode) ? p.summerMode : 'auto';
                 } catch (e) { /* keep defaults */ }
             }
             if (!parsed.names || !parsed.names.length) {
                 parsed.names = DEFAULT_NAMES.slice();
             }
             return parsed;
+        }
+
+        function isSummerSeason(state) {
+            const mode = (state && state.summerMode) || 'auto';
+            if (mode === 'on') return true;
+            if (mode === 'off') return false;
+            const m = new Date().getMonth() + 1;
+            return m >= 4 && m <= 8;
         }
 
         async function saveState(state) {
@@ -255,18 +295,21 @@
 
         // ======== UI rendering ========
         function loadNames(names) {
-            const dropdown = document.getElementById('sproei-select');
-            dropdown.innerHTML = '';
-            const initial = document.createElement('option');
-            initial.textContent = 'selecteer je naam';
-            initial.value = '';
-            initial.selected = true;
-            initial.disabled = true;
-            dropdown.appendChild(initial);
-            (names || []).forEach(name => {
-                const opt = document.createElement('option');
-                opt.textContent = name;
-                dropdown.appendChild(opt);
+            ['rotatie-select', 'plantenbakken-select'].forEach(id => {
+                const dropdown = document.getElementById(id);
+                if (!dropdown) return;
+                dropdown.innerHTML = '';
+                const initial = document.createElement('option');
+                initial.textContent = 'selecteer je naam';
+                initial.value = '';
+                initial.selected = true;
+                initial.disabled = true;
+                dropdown.appendChild(initial);
+                (names || []).forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.textContent = name;
+                    dropdown.appendChild(opt);
+                });
             });
             document.getElementById('loading').style.display = 'none';
         }
@@ -291,7 +334,7 @@
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
             const headerRow = document.createElement('tr');
-            ['SproeiDatum', 'Door Wie', 'Zone'].forEach(h => {
+            ['SproeiDatum', 'Door Wie', 'Zone', 'Type'].forEach(h => {
                 const th = document.createElement('th');
                 th.className = 'text-center';
                 th.textContent = h;
@@ -301,7 +344,8 @@
 
             data.forEach(item => {
                 const row = document.createElement('tr');
-                const values = [isoToDmy(item.SproeiDatum), item.DoorWie, item.Zone];
+                const typeLabel = (item.type || 'rotatie') === 'plantenbakken' ? 'Plantenbakken' : 'Rotatie';
+                const values = [isoToDmy(item.SproeiDatum), item.DoorWie, item.Zone, typeLabel];
                 values.forEach(v => {
                     const td = document.createElement('td');
                     td.className = 'text-center';
@@ -317,20 +361,26 @@
             container.appendChild(table);
         }
 
-        function getLatestInfo(state) {
+        function getStatus(state) {
             const today = todayIso();
-            const wateredToday = state.history.find(e => e.SproeiDatum === today);
-            if (wateredToday) {
-                return {
-                    wasWateredToday: true,
-                    lastWateredBy: wateredToday.DoorWie,
-                    lastZone: Number(wateredToday.Zone),
-                    nextZone: state.nextZone || 1
-                };
+            const summer = isSummerSeason(state);
+            let rotatieDone = null;
+            let plantenbakkenDone = null;
+            state.history.forEach(e => {
+                if (e.SproeiDatum !== today) return;
+                const t = e.type || 'rotatie';
+                if (t === 'rotatie' && !rotatieDone) rotatieDone = e;
+                if (t === 'plantenbakken' && !plantenbakkenDone) plantenbakkenDone = e;
+            });
+            // Rotatie op zone 3 telt tevens als plantenbakken
+            if (!plantenbakkenDone && rotatieDone && Number(rotatieDone.Zone) === 3) {
+                plantenbakkenDone = rotatieDone;
             }
             return {
-                wasWateredToday: false,
-                nextZone: state.nextZone || 1
+                summer,
+                nextRotatieZone: state.nextZone || 1,
+                rotatieDone,
+                plantenbakkenDone,
             };
         }
 
@@ -340,25 +390,55 @@
                 currentState = state;
                 loadNames(state.names);
                 renderBeheerLijst();
-                const info = getLatestInfo(state);
+                renderSummerControl();
+                const status = getStatus(state);
+                const msg = document.getElementById('message');
+                if (msg) msg.textContent = '';
 
+                // Rotatie sectie
+                const rotatieMsg = document.getElementById('rotatie-message');
+                const rotatieForm = document.getElementById('rotatie-form');
+                if (status.rotatieDone) {
+                    rotatieMsg.textContent = `Vandaag al gedaan: zone ${status.rotatieDone.Zone} door ${status.rotatieDone.DoorWie}.`;
+                    rotatieForm.style.display = 'none';
+                } else {
+                    rotatieMsg.textContent = `Vandaag aan de beurt: zone ${status.nextRotatieZone}.`;
+                    rotatieForm.style.display = 'block';
+                }
+
+                // Plantenbakken sectie
+                const pbSection = document.getElementById('plantenbakken-section');
+                const pbMsg = document.getElementById('plantenbakken-message');
+                const pbForm = document.getElementById('plantenbakken-form');
+                if (status.summer) {
+                    pbSection.style.display = '';
+                    if (status.plantenbakkenDone) {
+                        if (status.plantenbakkenDone === status.rotatieDone) {
+                            pbMsg.textContent = `Vandaag afgedekt door de rotatie (zone 3, door ${status.plantenbakkenDone.DoorWie}).`;
+                        } else {
+                            pbMsg.textContent = `Vandaag al gedaan door ${status.plantenbakkenDone.DoorWie}.`;
+                        }
+                        pbForm.style.display = 'none';
+                    } else if (status.nextRotatieZone === 3 && !status.rotatieDone) {
+                        pbMsg.textContent = 'De rotatie is vandaag zone 3 — dat telt ook als plantenbakken. Hoeft dus maar één keer via de rotatieknop hierboven.';
+                        pbForm.style.display = 'none';
+                    } else {
+                        pbMsg.textContent = 'Plantenbakken moeten vandaag nog worden gesproeid.';
+                        pbForm.style.display = 'block';
+                    }
+                } else {
+                    pbSection.style.display = 'none';
+                }
+
+                // Foto: toon zone van rotatie (gedaan óf volgende)
+                const zoneToShow = status.rotatieDone ? Number(status.rotatieDone.Zone) : status.nextRotatieZone;
+                showRow(zoneToShow);
                 const instructie = document.getElementById('instructie-blok');
                 if (instructie) instructie.style.display = '';
-                if (info.wasWateredToday) {
-                    document.getElementById('message').textContent =
-                        `De sproeier is vandaag aangezet door ${info.lastWateredBy} in zone ${info.lastZone}.`;
-                    document.getElementById('sproei-form').style.display = 'none';
-                    showRow(info.lastZone);
-                } else {
-                    document.getElementById('message').textContent =
-                        `Vandaag moet zone ${info.nextZone} worden besproeid.`;
-                    document.getElementById('sproei-form').style.display = 'block';
-                    showRow(info.nextZone);
-                }
 
                 // sorteren nieuwste eerst
                 const sorted = state.history.slice().sort((a, b) =>
-                    (b.SproeiDatum + b.ts).localeCompare(a.SproeiDatum + a.ts));
+                    (b.SproeiDatum + (b.ts || '')).localeCompare(a.SproeiDatum + (a.ts || '')));
                 createWateringTable(sorted);
             } catch (err) {
                 console.error(err);
@@ -368,41 +448,62 @@
             }
         }
 
-        // ======== Sproei knop ========
-        function bindSproei() {
-            document.getElementById('sproei-button').addEventListener('click', async function (event) {
-                event.preventDefault();
-                const selectedOption = document.querySelector('#sproei-select option:checked');
-                if (!selectedOption || selectedOption.value === '') {
-                    document.getElementById('message').textContent = 'Selecteer eerst je naam.';
+        // ======== Sproei knoppen ========
+        async function handleSpray(type, button) {
+            const selectId = type === 'plantenbakken' ? 'plantenbakken-select' : 'rotatie-select';
+            const selectedOption = document.querySelector('#' + selectId + ' option:checked');
+            const msg = document.getElementById('message');
+            msg.textContent = '';
+            if (!selectedOption || selectedOption.value === '') {
+                msg.textContent = 'Selecteer eerst je naam.';
+                return;
+            }
+            button.disabled = true;
+            try {
+                const state = await loadState();
+                const today = todayIso();
+                const already = state.history.some(e =>
+                    e.SproeiDatum === today && (e.type || 'rotatie') === type);
+                if (already) {
+                    msg.textContent = type === 'plantenbakken'
+                        ? 'Plantenbakken zijn vandaag al gedaan.'
+                        : 'Rotatie is vandaag al gedaan.';
+                    await refreshUI();
                     return;
                 }
-                this.disabled = true;
-                try {
-                    const state = await loadState();
-                    const today = todayIso();
-                    if (state.history.some(e => e.SproeiDatum === today)) {
-                        document.getElementById('message').textContent = 'Er is vandaag al gesproeid.';
-                        await refreshUI();
-                        return;
-                    }
-                    const zone = state.nextZone || 1;
-                    state.history.push({
-                        SproeiDatum: today,
-                        DoorWie: selectedOption.textContent,
-                        Zone: zone,
-                        ts: new Date().toISOString()
-                    });
+                let zone;
+                if (type === 'plantenbakken') {
+                    zone = 3;
+                } else {
+                    zone = state.nextZone || 1;
                     state.nextZone = zone >= 4 ? 1 : zone + 1;
-                    await saveState(state);
-                    await refreshUI();
-                } catch (err) {
-                    console.error(err);
-                    if (handleAuthError(err)) return;
-                    document.getElementById('message').textContent = 'Er ging iets mis: ' + (err && err.message ? err.message : err);
-                } finally {
-                    this.disabled = false;
                 }
+                state.history.push({
+                    SproeiDatum: today,
+                    DoorWie: selectedOption.textContent,
+                    Zone: zone,
+                    ts: new Date().toISOString(),
+                    type: type,
+                });
+                await saveState(state);
+                await refreshUI();
+            } catch (err) {
+                console.error(err);
+                if (handleAuthError(err)) return;
+                msg.textContent = 'Er ging iets mis: ' + (err && err.message ? err.message : err);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function bindSproei() {
+            document.getElementById('rotatie-button').addEventListener('click', function (event) {
+                event.preventDefault();
+                handleSpray('rotatie', this);
+            });
+            document.getElementById('plantenbakken-button').addEventListener('click', function (event) {
+                event.preventDefault();
+                handleSpray('plantenbakken', this);
             });
         }
 
@@ -620,6 +721,33 @@
                 document.getElementById('advanced-block').style.display = advancedMode ? 'block' : 'none';
                 renderBeheerLijst();
             });
+            ['auto', 'on', 'off'].forEach(v => {
+                const el = document.getElementById('summer-' + v);
+                if (!el) return;
+                el.addEventListener('change', async e => {
+                    if (!e.target.checked) return;
+                    const msg = document.getElementById('beheer-message');
+                    msg.textContent = '';
+                    try {
+                        const fresh = await loadState();
+                        fresh.summerMode = v;
+                        await saveState(fresh);
+                        currentState = fresh;
+                        await refreshUI();
+                    } catch (err) {
+                        console.error(err);
+                        if (handleAuthError(err)) return;
+                        msg.textContent = 'Opslaan mislukt: ' + (err && err.message ? err.message : err);
+                    }
+                });
+            });
+        }
+
+        function renderSummerControl() {
+            if (!currentState) return;
+            const mode = currentState.summerMode || 'auto';
+            const el = document.getElementById('summer-' + mode);
+            if (el) el.checked = true;
         }
 
         function startApp() {
